@@ -25,7 +25,7 @@ HAPROXY_BIN_URL="${BASE_URL}/bin/haproxy.linux2628_x86_64"
 HAPROXY_LKL_BIN_URL="${BASE_URL}/bin/haproxy-lkl.sh"
 HAPROXY_LKL_SERVICE_FILE_DEBIAN_URL="${BASE_URL}/startup/haproxy-lkl.init.debain"
 HAPROXY_LKL_SERVICE_FILE_REDHAT_URL="${BASE_URL}/startup/haproxy-lkl.init.redhat"
-HAPROXY_LKL_SYSTEMD_FILE_URL="${BASE_URL}/startup/haproxy-lkl.systemd"
+HAPROXY_LKL_SYSTEMD_FILE_URL="${BASE_URL}/startup/haproxy-lkl.service"
 LKL_LIB_URL="${BASE_URL}/lib64/liblkl-hijack.so-20170424"
 LKL_LIB_MD5='74508c6e98fc9d106a2ba9edcae47fb3'
 
@@ -51,7 +51,8 @@ command_exists() {
 }
 
 check_root() {
-	local user="$(id -un 2>/dev/null || true)"
+	local user
+	user="$(id -un 2>/dev/null || true)"
 	if [ "$user" != "root" ]; then
 		cat >&2 <<-'EOF'
 		权限错误, 请使用 root 用户运行此脚本!
@@ -71,9 +72,10 @@ check_ovz() {
 }
 
 check_ldd() {
-	local ldd_version="$(ldd --version 2>/dev/null | grep 'ldd' | rev | cut -d ' ' -f1 | rev)"
+	local ldd_version
+	ldd_version="$(ldd --version 2>/dev/null | grep 'ldd' | rev | cut -d ' ' -f1 | rev)"
 	if [ -n "$ldd_version" ]; then
-		if [ "${ldd_version%.*}" -eq "2" -a "${ldd_version#*.}" -lt "14" ] || \
+		if [ "${ldd_version%.*}" -eq "2" ] && [ "${ldd_version#*.}" -lt "14" ] || \
 		[ "${ldd_version%.*}" -lt "2" ]; then
 			cat >&2 <<-EOF
 			当前服务器的 glibc 版本为 $ldd_version。
@@ -112,7 +114,8 @@ check_arch() {
 
 any_key_to_continue() {
 	echo "请按任意键继续或 Ctrl + C 退出"
-	local saved="$(stty -g)"
+	local saved
+	saved="$(stty -g)"
 	stty -echo
 	stty cbreak
 	dd if=/dev/tty bs=1 count=1 2> /dev/null
@@ -208,7 +211,7 @@ get_os_info() {
 		;;
 	esac
 
-	if [ -z "$lsb_dist" -o -z "$dist_version" ]; then
+	if [ -z "$lsb_dist" ] || [ -z "$dist_version" ]; then
 		cat >&2 <<-EOF
 		无法确定服务器系统版本信息。
 		请联系脚本作者。
@@ -411,7 +414,7 @@ install_haproxy() {
 	local haproxy_lkl_bin="${HAPROXY_LKL_DIR}/sbin/${SERVICE_NAME}"
 	download_file "$HAPROXY_LKL_BIN_URL" "$haproxy_lkl_bin"
 
-	sed -i -r "s#^HAPROXY_LKL_DIR=.*#HAPROXY_LKL_DIR='"${HAPROXY_LKL_DIR}"'#" \
+	sed -i -r "s#^HAPROXY_LKL_DIR=.*#HAPROXY_LKL_DIR='${HAPROXY_LKL_DIR}'#" \
 		"$haproxy_lkl_bin"
 
 	set_interface() {
@@ -446,7 +449,7 @@ install_haproxy() {
 				read -p "请输入你的网络接口名称(例如: eth0): " input
 				echo
 				if [ -n "$input" ]; then
-					sed -i -r "s#^INTERFACE=.*#INTERFACE='"${input}"'#" "$haproxy_lkl_bin"
+					sed -i -r "s#^INTERFACE=.*#INTERFACE='${input}'#" "$haproxy_lkl_bin"
 				else
 					echo "输入信息不能为空，请重新输入！"
 					continue
@@ -534,8 +537,9 @@ install_lkl_lib() {
 }
 
 enable_ip_forward() {
-	local ip_forword="$(sysctl -n 'net.ipv4.ip_forward' 2>/dev/null)"
-	if [ -z "$ip_forword" -o "$ip_forword" != "1" ]; then
+	local ip_forword
+	ip_forword="$(sysctl -n 'net.ipv4.ip_forward' 2>/dev/null)"
+	if [ -z "$ip_forword" ] || [ "$ip_forword" != "1" ]; then
 		(
 			set -x
 			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
@@ -548,7 +552,7 @@ set_config() {
 	is_port() {
 		local port=$1
 		expr $port + 1 >/dev/null 2>&1 && \
-			[ "$port" -ge "1" -a "$port" -le "65535" ]
+			[ "$port" -ge "1" ] && [ "$port" -le "65535" ]
 	}
 
 	local input=

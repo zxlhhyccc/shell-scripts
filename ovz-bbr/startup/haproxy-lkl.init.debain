@@ -18,7 +18,6 @@ HAPROXY=${HAPROXY_LKL_DIR}/sbin/haproxy
 HAPROXY_LKL=${HAPROXY_LKL_DIR}/sbin/$BASENAME
 
 PIDFILE=/var/run/${BASENAME}.pid
-CONFIG=${HAPROXY_LKL_DIR}/etc/haproxy.cfg
 
 RETVAL=0
 

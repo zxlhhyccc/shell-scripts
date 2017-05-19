@@ -19,7 +19,7 @@ LKL_TAP_NAME='lkl'
 LKL_IN_CHAIN_NAME='LKL_IN'
 
 HAPROXY_CFG_FILE="${HAPROXY_LKL_DIR}/etc/haproxy.cfg"
-PIDFILE=
+PIDFILE='/var/run/haproxy-lkl.pid'
 LOGFILE='/dev/null'
 
 RETVAL=0
@@ -43,8 +43,9 @@ command_exists() {
 }
 
 make_file_dir() {
-	local file="$1"
-	local dir="$(dirname $file)"
+	local file="$1"; local dir
+
+	dir="$(dirname $file)"
 	if [ ! -d "$dir" ]; then
 		mkdir -p "$dir" 2>/dev/null
 	fi
@@ -104,10 +105,22 @@ pre_check() {
 }
 
 clear_iptables_rules() {
-	iptables -t nat -D PREROUTING -i ${INTERFACE} -j ${LKL_IN_CHAIN_NAME} 2>/dev/null
+	if command_exists firewall-cmd; then
+		firewall-cmd --quiet --state
+		if [ "$?" != "0" ]; then
+			if command_exists systemctl; then
+				systemctl restart firewalld
+			elif command_exists service; then
+				service firewalld restart
+			fi
+		fi
+		firewall-cmd --quiet --reload
+	elif command_exists iptables; then
+		iptables -t nat -D PREROUTING -i ${INTERFACE} -j ${LKL_IN_CHAIN_NAME} 2>/dev/null
 
-	iptables -t nat -F ${LKL_IN_CHAIN_NAME} 2>/dev/null
-	iptables -t nat -X ${LKL_IN_CHAIN_NAME} 2>/dev/null
+		iptables -t nat -F ${LKL_IN_CHAIN_NAME} 2>/dev/null
+		iptables -t nat -X ${LKL_IN_CHAIN_NAME} 2>/dev/null
+	fi
 }
 
 set_network() {
@@ -134,10 +147,12 @@ set_network() {
 
 	clear_iptables_rules
 
-	iptables -P FORWARD ACCEPT 2>/dev/null
+	if ! command_exists firewall-cmd && command_exists iptables; then
+		iptables -P FORWARD ACCEPT 2>/dev/null
 
-	iptables -t nat -N ${LKL_IN_CHAIN_NAME} 2>/dev/null
-	iptables -t nat -A PREROUTING -i ${INTERFACE} -j ${LKL_IN_CHAIN_NAME} 2>/dev/null
+		iptables -t nat -N ${LKL_IN_CHAIN_NAME} 2>/dev/null
+		iptables -t nat -A PREROUTING -i ${INTERFACE} -j ${LKL_IN_CHAIN_NAME} 2>/dev/null
+	fi
 }
 
 generate_config() {
@@ -152,7 +167,9 @@ generate_config() {
 		exit 1
 	fi
 
-	local port_rule_lines="$(grep -v '^#' ${port_rules_file} | \
+	local port_rule_lines
+
+	port_rule_lines="$(grep -v '^#' ${port_rules_file} | \
 		sed 's/[[:space:]]//g' | sed '/^$/d' 2>/dev/null)"
 
 	if [ -z "$port_rule_lines" ]; then
@@ -199,7 +216,7 @@ generate_config() {
 		local ports="$1"
 
 		legal_rules="$(printf "%s\n%s" "${legal_rules}" "${ports}")"
-		i=`expr $i + 1`
+		i=$(expr $i + 1)
 
 		cat >>"$HAPROXY_CFG_FILE" <<-EOF
 		frontend proxy-${i}
@@ -207,16 +224,21 @@ generate_config() {
 		    default_backend local
 		EOF
 
-		iptables -t nat -A ${LKL_IN_CHAIN_NAME} -p tcp \
-			--dport "$(echo "$ports" | tr '-' ':')" -j DNAT \
-			--to-destination 10.0.0.2 2>/dev/null
+		if command_exists firewall-cmd; then
+			firewall-cmd --quiet --zone=public \
+				--add-forward-port=port=${ports}:proto=tcp:toaddr=10.0.0.2
+		elif command_exists iptables; then
+			iptables -t nat -A ${LKL_IN_CHAIN_NAME} -p tcp \
+				--dport "$(echo "$ports" | tr '-' ':')" -j DNAT \
+				--to-destination 10.0.0.2 2>/dev/null
+		fi
 	}
 
 	is_port() {
 		local port=$1
 
-		`expr $port + 1 >/dev/null 2>&1` && \
-		[ "$port" -ge "1" -a "$port" -le "65535" ]
+		expr $port + 1 >/dev/null 2>&1 && \
+		[ "$port" -ge "1" ] && [ "$port" -le "65535" ]
 		return $?
 	}
 
@@ -226,7 +248,7 @@ generate_config() {
 		start_port="$(echo $line | cut -d '-' -f1)"
 		end_port="$(echo $line | cut -d '-' -f2)"
 
-		if [ -n "$start_port" -a -n "$end_port" ]; then
+		if [ -n "$start_port" ] && [ -n "$end_port" ]; then
 			if ( is_port "$start_port" && is_port "$end_port" ); then
 				add_rule "$line"
 			fi
@@ -308,7 +330,7 @@ do_start() {
 	local pid=
 	start_haproxy_lkl && pid=$! || RETVAL=$?
 
-	if [ -n "$pid" -a -n "$PIDFILE" ]; then
+	if [ -n "$pid" ]; then
 		echo "$pid" >"$PIDFILE" 2>/dev/null
 	fi
 }
