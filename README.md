@@ -9,6 +9,8 @@ kcptun加速的原贴地址：https://blog.kuoruan.com/110.html
 
 电脑SSR客户端下载地址：https://github.com/shadowsocksrr/shadowsocksr-csharp/releases
 
+                     https://github.com/shadowsocksrr
+
 手机SSR客户端下载地址：https://github.com/shadowsocks/shadowsocks-android/releases
 
 手机kcptun插件下载地址：https://github.com/shadowsocks/kcptun-android/releases
