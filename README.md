@@ -7,7 +7,9 @@ kcp启动工具下载地址：https://github.com/dfdragon/kcptun_gclient/release
 
 kcp服务端+客户端下载地址：https://github.com/xtaci/kcptun/releases
 
-SSR客户端下载地址：https://github.com/shadowsocksrr/shadowsocksr-csharp/releases
+电脑SSR客户端下载地址：https://github.com/shadowsocksrr/shadowsocksr-csharp/releases
+
+手机SSR客户端下载地址：https://github.com/shadowsocks/shadowsocks-android/releases
 
 最详细的图文教程地址：https://github.com/yangtengx/ssr/issues
 
