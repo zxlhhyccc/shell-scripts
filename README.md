@@ -11,6 +11,8 @@ kcp服务端+客户端下载地址：https://github.com/xtaci/kcptun/releases
 
 手机SSR客户端下载地址：https://github.com/shadowsocks/shadowsocks-android/releases
 
+openwrt路由kcptun客户端下载地址：https://github.com/kuoruan/luci-app-kcptun/releases
+
 最详细的图文教程地址：https://github.com/yangtengx/ssr/issues
 
 SSR_NG客户端下载地址：https://github.com/shadowsocks/ShadowsocksX-NG/releases
