@@ -22,3 +22,15 @@ openwrt路由kcptun客户端下载地址：https://github.com/kuoruan/luci-app-k
 SSR_NG客户端下载地址：https://github.com/shadowsocks/ShadowsocksX-NG/releases
 
 编译openwrt版udpspeeder和udp2raw：https://www.atrandys.com/2018/1255.html
+
+第一段：
+
+wget --no-check-certificate https://github.com/kuoruan/shell-scripts/raw/master/kcptun/kcptun.sh
+
+第二段：
+
+chmod +x ./kcptun.sh
+
+第三段：
+
+./kcptun.sh
