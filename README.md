@@ -34,3 +34,6 @@ chmod +x ./kcptun.sh
 第三段：
 
 ./kcptun.sh
+``````
+wget -N --no-check-certificate -O kcptun.sh "https://github.com/kuoruan/shell-scripts/raw/master/kcptun/kcptun.sh"  && chmod +x kcptun.sh && ./kcptun.sh
+```````
