@@ -36,4 +36,7 @@ chmod +x ./kcptun.sh
 ./kcptun.sh
 ``````
 wget -N --no-check-certificate -O kcptun.sh "https://github.com/kuoruan/shell-scripts/raw/master/kcptun/kcptun.sh"  && chmod +x kcptun.sh && ./kcptun.sh
-```````
+unzip setuptools-40.6.3.zip
+cd setuptools-40.6.3
+sudo python setup.py install
+````````
